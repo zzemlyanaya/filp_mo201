@@ -4,24 +4,24 @@
 
 #include "CAllocator.h"
 
-template <class T>
-CAllocator<T>::CAllocator() {
+template<class T, class Allocator>
+CAllocator<T, Allocator>::CAllocator() {
 
 }
 
-template<class T>
-CAllocator<T>::CAllocator(const CAllocator& other) {
+template<class T, class Allocator>
+CAllocator<T, Allocator>::CAllocator(CAllocator &other) {
 
 }
 
-template <class T>
-T *CAllocator<T>::allocate(size_t count) {
-    printf("Allocating %d\n", (int)(count * sizeof(T)));
-    return (T*)malloc(sizeof(T) * count);
+template<class T, class Allocator>
+T *CAllocator<T, Allocator>::allocate(std::size_t n) {
+    printf("Allocating %d\n", (int)(n * sizeof(T)));
+    return (T*)malloc(sizeof(T) * n);
 }
 
-template<class T>
-void CAllocator<T>::deallocate(T *V, size_t count) {
-    printf("Freeing %d\n", (int)(count * sizeof(T)));
-    free(V);
+template<class T, class Allocator>
+void CAllocator<T, Allocator>::deallocate(T *p, std::size_t n) {
+    printf("Freeing %d\n", (int)(n * sizeof(T)));
+    free(p);
 }
