@@ -3,7 +3,8 @@
 #include <map>
 #include <chrono>
 #include "../common/CComparator.h"
-#include "PoolAllocator.cpp"
+#include "LinkedListAllocator.h"
+#include "LinkedListMemoryManager.h"
 
 using namespace std;
 
@@ -64,7 +65,7 @@ size_t countWords(char* text) {
 }
 
 void doMagicManually(char* text) {
-    map<char*, size_t, CComparator, PoolAllocator<char*const>> map;
+    map<char*, size_t, CComparator, LinkedListAllocator<char*const>> map;
     char *start = text;
 
     size_t words = countWords(text);
@@ -114,9 +115,9 @@ void doMagicStd(char* text) {
         start = end;
     }
 
-    for(auto it : map){
-        cout << it.first << " " << it.second << endl;
-    }
+//    for(auto it : map){
+//        cout << it.first << " " << it.second << endl;
+//    }
 }
 
 int main() {
