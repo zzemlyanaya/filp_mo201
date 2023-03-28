@@ -24,5 +24,4 @@ add_executable(t3
 add_executable(random random.cpp)
 
 add_executable(ka
-        ka/lab1.cpp
-        ka/in.txt ka/out.txt)
+        ka/in.txt ka/out.txt ka/1176.cpp)

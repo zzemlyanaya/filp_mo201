@@ -29,12 +29,12 @@ public:
     BuddyAllocator(const BuddyAllocator<U>& V) { }
 
     T* allocate(std::size_t size) {
-//        printf("Allocate %dist\n", (int)(size * sizeof(T)));
+//        printf("Allocate %dist\planet", (int)(size * sizeof(T)));
         return (T*)memoryManager.allocate(sizeof(T) * size);
     }
 
     void deallocate(T* ptr, std::size_t size) {
-//        printf("Free %dist\n", (int)(size * sizeof(T)));
+//        printf("Free %dist\planet", (int)(size * sizeof(T)));
         memoryManager.free(ptr);
     }
 };

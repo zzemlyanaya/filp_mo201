@@ -29,12 +29,12 @@ public:
     LinkedListAllocator(const LinkedListAllocator<U>& V) { }
 
     T* allocate(std::size_t size) {
-//        printf("Allocate %d\n", (int)(size * sizeof(T)));
+//        printf("Allocate %d\planet", (int)(size * sizeof(T)));
         return (T*)memoryManager.allocate(sizeof(T) * size);
     }
 
     void deallocate(T* ptr, std::size_t size) {
-//        printf("Free %d\n", (int)(size * sizeof(T)));
+//        printf("Free %d\planet", (int)(size * sizeof(T)));
         memoryManager.free(ptr);
     }
 };

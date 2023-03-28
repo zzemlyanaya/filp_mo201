@@ -5,16 +5,29 @@
 #ifndef FILP_MO201_BUDDYMEMORYMANAGER_H
 #define FILP_MO201_BUDDYMEMORYMANAGER_H
 
+#ifdef __LP64__
+#define BITS 64
+#else
+#define BITS 32
+#endif
+
 #pragma once
 
-#include <new>
+#include <cstdio>
+
+int bsr(size_t x) {
+    return BITS-__builtin_clz(x | 1);
+}
+
+int bsf(size_t x) {
+    return __builtin_ctz(x);
+}
 
 #pragma pack(push, 1)
 struct Block {
     unsigned char level;
     bool isFree;
 
-    std::size_t size;
     union {
         struct {
             Block* next;
@@ -73,10 +86,31 @@ private:
     const size_t sizeBuffer = 1 << MAX_LEVEL;
     CList<Block> lists[MAX_LEVEL+1];
     char* buffer;
+    size_t mask = 0;
 
     Block* getBuddy(Block* item) {
-        // TODO
+        const size_t dist = ((char*)item - buffer);
+        const size_t blockSize = 1 << item->level;
 
+        size_t blockNum = dist / blockSize;
+
+        if (blockNum % 2 == 0) {
+            return (Block*)((char*)item + blockSize);
+        }
+
+        return (Block*)((char*)item - blockSize);
+    }
+
+    void insert(Block* block) {
+        lists[block->level].insertItem(block);
+        block->isFree = true;
+        mask = mask | (1 << block->level);
+    }
+
+    void remove(Block* block) {
+        lists[block->level].removeItem(block);
+        block->isFree = false;
+        mask = mask & ~(1 << block->level);
     }
 
 public:
@@ -84,9 +118,7 @@ public:
         buffer = new char[sizeBuffer];
         Block* maxItem = reinterpret_cast<Block*>(buffer);
         maxItem->level = MAX_LEVEL;
-        maxItem->isFree = true;
-
-        lists[MAX_LEVEL].insertItem(maxItem);
+        insert(maxItem);
     }
 
     ~BuddyMemoryManager() {
@@ -97,28 +129,28 @@ public:
     void* allocate(size_t size) {
         size_t requiredSize = size + sizeof(unsigned char) + sizeof(bool);
 
-        for (size_t i = 0; i <= MAX_LEVEL; i++) {
-            size_t blockSize = 1 << i;
-            if (lists[i].getHead() != nullptr && blockSize >= size) {
-                Block* block = lists[i].getHead();
-                lists[i].removeItem(block);
-                block->isFree = false;
+        int x1 = (1 << (bsr(requiredSize)+1)) - 1;
+        int x2 = ~x1;
+        int i = bsf(mask & x2);
 
-                while (true) {
-                    if (blockSize / 2 >= requiredSize) {
-                        blockSize = blockSize / 2;
-                        block->level--;
-                        Block* left = block;
+        size_t blockSize = 1 << i;
 
-                        Block* right = reinterpret_cast<Block*>((char*)block + blockSize);
-                        right->level = block->level;
-                        right->isFree = true;
+        if (lists[i].getHead() != nullptr && blockSize >= size) {
+            Block* block = lists[i].getHead();
+            remove(block);
 
-                        lists[right->level].insertItem(right);
-                    }
-                    else {
-                        return block->data;
-                    }
+            while (true) {
+                if (blockSize / 2 >= requiredSize) {
+                    blockSize = blockSize / 2;
+                    block->level--;
+
+                    Block* right = reinterpret_cast<Block*>((char*)block + blockSize);
+                    right->level = block->level;
+
+                    insert(right);
+                }
+                else {
+                    return block->data;
                 }
             }
         }
@@ -126,9 +158,33 @@ public:
         throw std::bad_alloc();
     }
 
-    void free(void* ptr) {
+    int free(void* ptr) {
         Block* block = (Block*)((char*)ptr - sizeof(unsigned char)-sizeof(bool));
 
+        while (true) {
+            if (block->level == MAX_LEVEL) {
+                insert(block);
+                break;
+            }
+
+            Block* pBuddy = getBuddy(block);
+
+            if (pBuddy->level == block->level && pBuddy->isFree) {
+                //lists[pBuddy->level].removeItem(pBuddy);
+                remove(pBuddy);
+
+                // Check which one level is less
+                if (block > pBuddy) {
+                    block = pBuddy;
+                }
+
+                block->level++;
+            }
+            else {
+                insert(block);
+                break;
+            }
+        }
     }
 
 };
