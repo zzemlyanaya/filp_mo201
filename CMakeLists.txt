@@ -21,7 +21,20 @@ add_executable(t3
         t3/BuddyMemoryManager.h t3/BuddyAllocator.h
         cmake-build-debug/book.txt)
 
+add_executable(t4
+        t4/main.cpp t4/FilePtr.h
+        cmake-build-debug/book.txt)
+
+add_executable(t5
+        t5/main.cpp t5/BinaryTree.h)
+
+add_executable(t6
+        t6/main.cpp t6/Treap.h)
+
+add_executable(t7
+        t7/main.cpp t7/AVLTree.h)
+
 add_executable(random random.cpp)
 
 add_executable(ka
-        ka/in.txt ka/out.txt ka/1176.cpp)
+        ka/in.txt ka/out.txt ka/lab3.cpp)

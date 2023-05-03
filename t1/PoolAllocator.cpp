@@ -90,6 +90,6 @@ public:
     }
 
     void destroy(pointer p) {
-        p->~T();
+        p->~armies();
     }
 };
