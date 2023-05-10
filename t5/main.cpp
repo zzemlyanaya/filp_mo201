@@ -11,7 +11,7 @@ using namespace std;
 
 
 int main() {
-    AVLTree<int, int> tree = AVLTree<int, int>();
+    BinaryTree<int, int> tree = BinaryTree<int, int>();
     tree = tree.addNode(1, 2);
     tree = tree.addNode(4, 1);
     tree = tree.addNode(0, 2);

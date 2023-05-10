@@ -10,7 +10,7 @@
 
 using namespace std;
 
-template<class K, class V> struct AVLTree {
+template<class K, class V> struct BinaryTree {
     struct Node {
         K key;
         V value;
@@ -34,17 +34,17 @@ template<class K, class V> struct AVLTree {
 
     std::shared_ptr<Node> root;
 
-    AVLTree() {}
+    BinaryTree() {}
 
-    AVLTree(K key, V value) {
+    BinaryTree(K key, V value) {
         root = std::make_shared<Node>(key, value);
     }
 
-    AVLTree(std::shared_ptr<Node> node) {
+    BinaryTree(std::shared_ptr<Node> node) {
         root = node;
     }
 
-    AVLTree(std::initializer_list<std::pair<K, V>> list) {
+    BinaryTree(std::initializer_list<std::pair<K, V>> list) {
         for (auto el : list) {
             root = add(root, el.first, el.second);
         }
@@ -99,12 +99,12 @@ template<class K, class V> struct AVLTree {
         }
     }
 
-    AVLTree addNode(K key, V value) {
-        return AVLTree(add(root, key, value));
+    BinaryTree addNode(K key, V value) {
+        return BinaryTree(add(root, key, value));
     }
 
-    AVLTree removeNode(K key) {
-        return AVLTree(remove(root, key));
+    BinaryTree removeNode(K key) {
+        return BinaryTree(remove(root, key));
     }
 
     void printTree(std::shared_ptr<Node> node) {

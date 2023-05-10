@@ -8,40 +8,228 @@
 #include<iostream>
 #include <memory>
 
+using namespace std;
+
 // https://www.tutorialspoint.com/data_structures_algorithms/avl_tree_algorithm.htm
 
-template<class K, class V> struct AVLTree {
+template<class K, class V>
+class AVLTree {
     struct Node {
         K key;
         V value;
-        std::size_t height;
+        int height;
 
         std::shared_ptr<Node> left;
         std::shared_ptr<Node> right;
 
-        Node(K key, V value, std::size_t height) {
+        Node(K key, V value, int height) {
             this->key = key;
             this->value = value;
             this->height = height;
         }
 
-        Node(std::shared_ptr<Node> left, std::shared_ptr<Node> right, K key, V value, std::size_t height) {
+        Node(std::shared_ptr<Node> left, std::shared_ptr<Node> right, K key, V value, int height) {
             this->left = left;
             this->right = right;
 
             this->key = key;
             this->value = value;
-
             this->height = height;
         }
     };
+
+    struct Trunk
+    {
+        std::shared_ptr<Trunk> prev;
+        string str;
+
+        Trunk(std::shared_ptr<Trunk> prev, string str)
+        {
+            this->prev = prev;
+            this->str = str;
+        }
+    };
+
+    void showTrunks(std::shared_ptr<Trunk> p)
+    {
+        if (p == nullptr) {
+            return;
+        }
+
+        showTrunks(p->prev);
+        cout << p->str;
+    }
+
+    void printTree(std::shared_ptr<Node> root, std::shared_ptr<Trunk> prev, bool isLeft)
+    {
+        if (root == nullptr) {
+            return;
+        }
+
+        string prev_str = "       ";
+        auto trunk = std::make_shared<Trunk>(prev, prev_str);
+
+        printTree(root->right, trunk, true);
+
+        if (!prev) {
+            trunk->str = "------";
+        }
+        else if (isLeft)
+        {
+            trunk->str = " .------";
+            prev_str = "       |";
+        }
+        else {
+            trunk->str = " `------";
+            prev->str = prev_str;
+        }
+
+        showTrunks(trunk);
+        cout << "(" << root->key << ")" << endl; // << " [value: " << root->value << "]" << endl;
+
+        if (prev) {
+            prev->str = prev_str;
+        }
+        trunk->str = "       |";
+
+        printTree(root->left, trunk, false);
+    }
+
+    int getHeight(std::shared_ptr<Node> node) {
+        return node == nullptr ? 0 : node->height;
+    }
+
+    int balancedHeight(std::shared_ptr<Node> node) {
+        return std::max(getHeight(node->left), getHeight(node->right)) + 1;
+    }
+
+    std::shared_ptr<Node> rotateRight(std::shared_ptr<Node> node) {
+        auto newParent = std::make_shared<Node>(node->left->key, node->left->value, 1);
+        auto newRight = std::make_shared<Node>(node->key, node->value, 1);
+
+        newParent->right = newRight;
+        newParent->left = node->left->left;
+
+        newRight->left = node->left->right;
+        newRight->right = node->right;
+
+        newRight->height = balancedHeight(newRight);
+        newParent->height = balancedHeight(newParent);
+        return newParent;
+    }
+
+    std::shared_ptr<Node> rotateLeft(std::shared_ptr<Node> node) {
+        auto newParent = std::make_shared<Node>(node->right->key, node->right->value, 1);
+        auto newLeft = std::make_shared<Node>(node->key, node->value, 1);
+
+        newParent->left = newLeft;
+        newParent->right = node->right->right;
+
+        newLeft->right = node->right->left;
+        newLeft->left = node->left;
+
+        newLeft->height = balancedHeight(newLeft);
+        newParent->height = balancedHeight(newParent);
+        return newParent;
+    }
+
+    std::shared_ptr<Node> add(std::shared_ptr<Node> node, K key, V value) {
+        if (node == nullptr) {
+            return std::make_shared<Node>(key, value, 1);
+        }
+
+        if (node->value == value && node->key == key) {
+            return node;
+        }
+
+        if (node->key == key) {
+            return std::make_shared<Node>(node->left, node->right, key, value, node->height);
+        }
+
+        std::shared_ptr<Node> newNode = std::make_shared<Node>(node->key, node->value, node->height);
+        if (node->key > key) {
+            newNode->left = add(node->left, key, value);
+            newNode->right = node->right;
+        }
+        else {
+            newNode->left = node->left;
+            newNode->right = add(node->right, key, value);
+        }
+        node = newNode;
+        node->height = balancedHeight(node);
+
+        // -------------------балансировка дерева------------------
+        int balance = getHeight(node->left) - getHeight(node->right);
+
+        if (balance > 1 && key < node->left->key)
+            return rotateRight(node);
+
+        if (balance < -1 && key > node->right->key)
+            return rotateLeft(node);
+
+        if (balance > 1 && key > node->left->key) {
+            node->left = rotateLeft(node->left);
+            return rotateRight(node);
+        }
+        if (balance < -1 && key < node->right->key) {
+            node->right = rotateRight(node->right);
+            return rotateLeft(node);
+        }
+        return node;
+        // -------------------балансировка дерева------------------
+
+    }
+
+    std::shared_ptr<Node> remove(std::shared_ptr<Node> node, K key) {
+        if (node == nullptr) {
+            return nullptr;
+        }
+
+        if (node->key > key) {
+            return std::make_shared<Node>(remove(node->left, key), node->right, node->key, node->value);
+        }
+
+        if (node->key < key) {
+            return std::make_shared<Node>(node->left, remove(node->right, key), node->key, node->value);
+        }
+
+        if (node->key == key) {
+            if (node->left == nullptr && node->right == nullptr) {
+                return nullptr;
+            }
+            else if (node->left == nullptr) {
+                return node->right;
+            }
+            else if (node->right == nullptr) {
+                return node->left;
+            }
+            else {
+                auto deleted = deleteRightestNode(node->left);
+                auto newTree = deleted.first;
+                auto deletedItem = deleted.second;
+
+                return std::make_shared<Node>(newTree, node->right, deletedItem->key, deletedItem->value);
+            }
+        }
+
+
+    }
+
+    std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> deleteRightestNode(std::shared_ptr<Node> node) {
+        if (node->right == nullptr) return std::make_pair(node->left, node);
+
+        auto right = deleteRightestNode(node->right);
+        return std::make_pair(std::make_shared<Node>(node->left, right.first, node->key, node->value), right.second);
+    }
+
+public:
 
     std::shared_ptr<Node> root;
 
     AVLTree() {}
 
     AVLTree(K key, V value) {
-        root = std::make_shared<Node>(key, value);
+        root = std::make_shared<Node>(key, value, 1);
     }
 
     AVLTree(std::shared_ptr<Node> node) {
@@ -54,102 +242,6 @@ template<class K, class V> struct AVLTree {
         }
     }
 
-    std::shared_ptr<Node> add(std::shared_ptr<Node> node, K key, V value) {
-        if (node == nullptr) {
-            return std::make_shared<Node>(key, value);
-        }
-
-        if (node->value == value && node->key == key) {
-            return node;
-        }
-
-        if (node->key == key) {
-            return std::make_shared<Node>(node->left, node->right, key, value, node->height);
-        }
-
-        auto newNode = std::make_shared<Node>(key, value, node->height);
-
-        if (node->key > key) {
-            newNode->left = add(node->left, key, value);
-            newNode->right = node->right;
-        }
-        else {
-            newNode->left = node->left;
-            newNode->right = add(node->right, key, value);
-        }
-
-        node = newNode;
-        node->height = 1 + max(getHeight(node->left), getHeight(node->right));
-
-        // start balancing avl tree
-        std::size_t balance = getHeight(node->left) - getHeight(node->right);
-        if (balance > 1 && key < node->left->key) {
-            // rotate right
-            auto newParent = std::make_shared<Node>(node->left->key, node->left->value, 1);
-            auto newRight = std::make_shared<Node>(node->key, node->value, 1);
-
-            newRight->right = node->right;
-            newRight->left = node->left->right;
-            newRight->height = balancedHeight(newRight);
-
-            newParent->right = newRight;
-            newParent->left = node->left->left;
-            newParent->height = balancedHeight(newParent);
-
-            return newParent;
-
-        }
-        if (balance > 1 && key > node->left->key) {
-
-        }
-
-        if (balance < -1 && key < node->right->key) {
-
-        }
-
-        if (balance < -1 && key > node->right->key) {
-            // rotate left
-            auto newParent = std::make_shared<Node>(node->right->key, node->right->value, 1);
-            auto newLeft = std::make_shared<Node>(node->key, node->value, 1);
-
-            newLeft->left = node->left;
-            newLeft->right = node->right->left;
-            newLeft->height = balancedHeight(newLeft);
-
-            newParent->left = newLeft;
-            newParent->right = node->right->right;
-            newParent->height = balancedHeight(newParent);
-
-            return newParent;
-        }
-    }
-
-    std::size_t getHeight(std::shared_ptr<Node> node) {
-        return node == nullptr ? 0 : node->height;
-    }
-
-    std::size_t balancedHeight(std::shared_ptr<Node> node) {
-        return 1 + max(getHeight(node->left), getHeight(node->right));
-    }
-
-    std::shared_ptr<Node> remove(std::shared_ptr<Node> node, K key) {
-        if (node == nullptr) {
-            return nullptr;
-        }
-
-        if (node->key > key) {
-            return std::make_shared<Node>(remove(node, key), node->right, node->key, node->value);
-        }
-
-        if (node->key < key) {
-            return std::make_shared<Node>(node->left, remove(node, key), node->key, node->value);
-        }
-
-        if (node->key == key) {
-            return nullptr;
-        }
-    }
-
     AVLTree addNode(K key, V value) {
         return AVLTree(add(root, key, value));
     }
@@ -159,15 +251,7 @@ template<class K, class V> struct AVLTree {
     }
 
     void printTree(std::shared_ptr<Node> node) {
-        if (node == nullptr) {
-            std::cout << "EON" << std::endl;
-            return;
-        }
-
-        std::cout << node->key << " - " << node->value << std::endl;
-
-        this->printTree(node->left);
-        this->printTree(node->right);
+        printTree(this->root, nullptr, false);
     }
 };
 
