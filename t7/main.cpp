@@ -23,7 +23,15 @@ int main()
         tree = tree.addNode(i, 0);
     }
     cout << findTreeHeight(tree);
+//    tree.printTree(tree.root);
+
+    std::cout << std::endl;
+
+    for (int i = 0; i < 10000; i+=2) {
+        tree = tree.removeNode(i);
+    }
     tree.printTree(tree.root);
+    cout << findTreeHeight(tree);
 
     std::cout << std::endl;
 

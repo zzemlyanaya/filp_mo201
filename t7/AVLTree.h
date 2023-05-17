@@ -103,6 +103,11 @@ class AVLTree {
         return std::max(getHeight(node->left), getHeight(node->right)) + 1;
     }
 
+    int getBalance(std::shared_ptr<Node> node) {
+        if (node == nullptr) return 0;
+        return getHeight(node->left) - getHeight(node->right);
+    }
+
     std::shared_ptr<Node> rotateRight(std::shared_ptr<Node> node) {
         auto newParent = std::make_shared<Node>(node->left->key, node->left->value, 1);
         auto newRight = std::make_shared<Node>(node->key, node->value, 1);
@@ -159,7 +164,7 @@ class AVLTree {
         node->height = balancedHeight(node);
 
         // -------------------балансировка дерева------------------
-        int balance = getHeight(node->left) - getHeight(node->right);
+        int balance = getBalance(node);
 
         if (balance > 1 && key < node->left->key)
             return rotateRight(node);
@@ -176,21 +181,42 @@ class AVLTree {
             return rotateLeft(node);
         }
         return node;
-        // -------------------балансировка дерева------------------
-
     }
 
     std::shared_ptr<Node> remove(std::shared_ptr<Node> node, K key) {
+        auto removed = removeUnbalanced(node, key);
+
+        // -------------------балансировка дерева------------------
+        int balance = getBalance(removed);
+
+        if (balance > 1 && getBalance(removed->left) >= 0)
+            return rotateRight(removed);
+
+        if (balance < -1 && getBalance(removed->right) <= 0)
+            return rotateLeft(removed);
+
+        if (balance > 1 && getBalance(removed->left) < 0) {
+            removed->left = rotateLeft(node->left);
+            return rotateRight(removed);
+        }
+        if (balance < -1 && getBalance(removed->right) > 0) {
+            removed->right = rotateRight(removed->right);
+            return rotateLeft(removed);
+        }
+        return removed;
+    }
+
+    std::shared_ptr<Node> removeUnbalanced(std::shared_ptr<Node> node, K key) {
         if (node == nullptr) {
             return nullptr;
         }
 
         if (node->key > key) {
-            return std::make_shared<Node>(remove(node->left, key), node->right, node->key, node->value);
+            return std::make_shared<Node>(remove(node->left, key), node->right, node->key, node->value, node->height);
         }
 
         if (node->key < key) {
-            return std::make_shared<Node>(node->left, remove(node->right, key), node->key, node->value);
+            return std::make_shared<Node>(node->left, remove(node->right, key), node->key, node->value, node->height);
         }
 
         if (node->key == key) {
@@ -204,22 +230,20 @@ class AVLTree {
                 return node->left;
             }
             else {
-                auto deleted = deleteRightestNode(node->left);
-                auto newTree = deleted.first;
-                auto deletedItem = deleted.second;
-
-                return std::make_shared<Node>(newTree, node->right, deletedItem->key, deletedItem->value);
+                auto deleted = findRightestNode(node->left);
+                auto deletedTree = remove(node, deleted->key);
+                deletedTree->key = deleted->key;
+                return deletedTree;
             }
         }
 
 
     }
 
-    std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> deleteRightestNode(std::shared_ptr<Node> node) {
-        if (node->right == nullptr) return std::make_pair(node->left, node);
+    std::shared_ptr<Node> findRightestNode(std::shared_ptr<Node> node) {
+        if (node->right == nullptr) return node;
 
-        auto right = deleteRightestNode(node->right);
-        return std::make_pair(std::make_shared<Node>(node->left, right.first, node->key, node->value), right.second);
+        return findRightestNode(node->right);
     }
 
 public:
